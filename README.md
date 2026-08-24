@@ -1,3 +1,5 @@
+cmake --build "/home/jorge/Documents/Projects/Personal/next-cloud/clients/desktop-client/nx-desktop/build/QT_6_10_3-Debug" --target nextcloud -j$(nproc) && "/home/jorge/Documents/Projects/Personal/next-cloud/clients/desktop-client/nx-desktop/build/QT_6_10_3-Debug/bin/nextcloud"
+
 <!--
   - SPDX-FileCopyrightText: 2017 Nextcloud GmbH and Nextcloud contributors
   - SPDX-FileCopyrightText: 2011 Nextcloud GmbH and Nextcloud contributors

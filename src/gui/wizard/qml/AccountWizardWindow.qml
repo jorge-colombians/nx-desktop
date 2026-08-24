@@ -276,26 +276,6 @@ WizardStyledWindow {
                 onClicked: root.controller.openAdvancedOptions()
             },
 
-            WizardButton {
-                visible: root.controller && root.controller.currentStep === AccountWizardController.ServerStep
-                enabled: root.controller && !root.controller.busy
-                text: qsTr("Sign up")
-                textSuffix: "\u2197"
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                onClicked: root.controller.openSignup()
-            },
-
-            WizardButton {
-                visible: root.controller && root.controller.currentStep === AccountWizardController.ServerStep
-                enabled: root.controller && !root.controller.busy
-                text: qsTr("Self-host")
-                textSuffix: "\u2197"
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                onClicked: root.controller.openSelfHostedServerGuide()
-            },
-
             Button {
                 id: proxySettingsButton
 

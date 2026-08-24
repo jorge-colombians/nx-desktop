@@ -9,6 +9,7 @@
         <file alias="theme/colored/@APPLICATION_ICON_NAME@-icon-256.png">theme/colored/256-@APPLICATION_ICON_NAME@-icon.png</file>
         <file alias="theme/colored/@APPLICATION_ICON_NAME@-icon-512.png">theme/colored/512-@APPLICATION_ICON_NAME@-icon.png</file>
         <file alias="theme/colored/@APPLICATION_ICON_NAME@-icon-1024.png">theme/colored/1024-@APPLICATION_ICON_NAME@-icon.png</file>
+        <file alias="theme/colored/company-logo.jpg">theme/colored/company-logo.jpg</file>
 
 		<!-- client state icons (colored) -->
 		<!-- @STATE_SUBDIR@ to switch between Nextcloud and neutral icons -->

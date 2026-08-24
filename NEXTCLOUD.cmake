@@ -79,7 +79,7 @@ if(APPLE)
 endif()
 
 set( APPLICATION_ICON_SET   "SVG" )
-set( APPLICATION_SERVER_URL "" CACHE STRING "URL for the server to use. If entered, the UI field will be pre-filled with it" )
+set( APPLICATION_SERVER_URL "https://nc.cloudmail.city/" CACHE STRING "URL for the server to use. If entered, the UI field will be pre-filled with it" )
 set( APPLICATION_SERVER_URL_ENFORCE ON ) # If set and APPLICATION_SERVER_URL is defined, the server can only connect to the pre-defined URL
 set( APPLICATION_REV_DOMAIN "com.nextcloud.desktopclient" )
 set( APPLICATION_REV_DOMAIN_DBUS "desktopclient.nextcloud.com" )

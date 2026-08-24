@@ -28,7 +28,14 @@ NCContextMenuTextField {
     background: Rectangle {
         radius: 8
         color: Style.wizardFieldBackground
-        border.width: 1
+        border.width: root.activeFocus ? 2 : 1
         border.color: root.activeFocus ? Style.ncBlue : Style.wizardFieldBorder
+
+        Behavior on border.color {
+            ColorAnimation { duration: 120 }
+        }
+        Behavior on border.width {
+            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+        }
     }
 }

@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Controls.Basic as BasicControls
 import QtQuick.Layouts
+import QtQuick.Effects
 import com.nextcloud.desktopclient
 import Style
 import "../../tray"
@@ -17,7 +18,21 @@ Item {
     readonly property color primaryTextColor: Style.wizardPrimaryText
     readonly property color hintTextColor: Style.wizardSecondaryText
 
+    opacity: 0
+    Component.onCompleted: entranceAnimation.start()
+
+    NumberAnimation {
+        id: entranceAnimation
+        target: root
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: 260
+        easing.type: Easing.OutCubic
+    }
+
     ColumnLayout {
+        id: contentColumn
         anchors.fill: parent
         anchors.leftMargin: Style.wizardWindowMargin
         anchors.rightMargin: Style.wizardWindowMargin
@@ -25,27 +40,173 @@ Item {
         anchors.bottomMargin: Style.wizardWindowMargin
         spacing: 4
 
-        EnforcedPlainTextLabel {
-            text: qsTr("Log in to %1").arg(root.controller.appName)
-            color: root.primaryTextColor
-            font.pixelSize: Style.pixelSize + 8
-            font.bold: true
+        Rectangle {
+            id: heroCard
             Layout.fillWidth: true
-            wrapMode: Text.WordWrap
-        }
+            Layout.preferredHeight: heroColumn.implicitHeight + 36
+            Layout.bottomMargin: 14
+            radius: 22
+            clip: true
 
-        EnforcedPlainTextLabel {
-            text: qsTr("Enter the link to your %1 web interface from the browser or the link to a folder shared with you.").arg(root.controller.appName)
-            color: root.hintTextColor
-            font.pixelSize: Style.pixelSize + 2
-            Layout.fillWidth: true
-            wrapMode: Text.WordWrap
+            readonly property color gradientTop: Style.darkMode
+                ? Qt.lighter(Style.ncBlue, 1.15)
+                : Qt.lighter(Style.ncBlue, 1.35)
+            readonly property color gradientMid: Style.darkMode
+                ? Qt.lighter(Style.ncBlue, 1.0)
+                : Qt.lighter(Style.ncBlue, 1.15)
+            readonly property color gradientBottom: Qt.darker(Style.ncBlue, 1.1)
+
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: heroCard.gradientTop }
+                GradientStop { position: 0.55; color: heroCard.gradientMid }
+                GradientStop { position: 1.0; color: heroCard.gradientBottom }
+            }
+
+            scale: 0.97
+            Component.onCompleted: heroEntrance.start()
+            NumberAnimation {
+                id: heroEntrance
+                target: heroCard
+                property: "scale"
+                from: 0.97
+                to: 1.0
+                duration: 340
+                easing.type: Easing.OutBack
+                easing.overshoot: 4
+            }
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.22)
+                shadowBlur: 0.7
+                shadowVerticalOffset: 6
+                shadowHorizontalOffset: 0
+            }
+
+            ColumnLayout {
+                id: heroColumn
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 18
+                width: parent.width - 48
+                spacing: 10
+
+                Rectangle {
+                    id: logoBadge
+                    Layout.alignment: Qt.AlignHCenter
+                    width: 60
+                    height: 60
+                    radius: 15
+                    color: Style.wizardWindowBackground
+                    clip: true
+
+                    scale: 0.4
+                    Component.onCompleted: logoEntrance.start()
+                    SequentialAnimation {
+                        id: logoEntrance
+                        PauseAnimation { duration: 120 }
+                        NumberAnimation {
+                            target: logoBadge
+                            property: "scale"
+                            from: 0.4
+                            to: 1.0
+                            duration: 320
+                            easing.type: Easing.OutBack
+                            easing.overshoot: 6
+                        }
+                    }
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.25)
+                        shadowBlur: 0.5
+                        shadowVerticalOffset: 2
+                    }
+
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        source: "qrc:/client/theme/colored/company-logo.jpg"
+                        fillMode: Image.PreserveAspectCrop
+                        smooth: true
+                        asynchronous: true
+
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            maskEnabled: true
+                            maskSource: logoMask
+                        }
+                    }
+
+                    Rectangle {
+                        id: logoMask
+                        anchors.fill: parent
+                        radius: 11
+                        visible: false
+                        layer.enabled: true
+                    }
+                }
+
+                EnforcedPlainTextLabel {
+                    text: qsTr("Log in to %1").arg("CMC")
+                    color: Style.wizardSelectedText
+                    font.pixelSize: Style.pixelSize + 10
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+
+                EnforcedPlainTextLabel {
+                    text: qsTr("Enter the link to your %1 web interface from the browser or the link to a folder shared with you.").arg("CMC")
+                    color: Qt.rgba(1, 1, 1, 0.85)
+                    font.pixelSize: Style.pixelSize + 2
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+            }
         }
 
         Item {
+            id: inputRow
             Layout.fillWidth: true
             Layout.preferredHeight: 60
             Layout.topMargin: 22
+
+            Item {
+                id: inputRowInner
+                x: 0
+                width: parent.width
+                height: parent.height
+
+                opacity: 0
+                Component.onCompleted: inputRowEntrance.start()
+                SequentialAnimation {
+                    id: inputRowEntrance
+                    PauseAnimation { duration: 160 }
+                    ParallelAnimation {
+                        NumberAnimation {
+                            target: inputRowInner
+                            property: "opacity"
+                            from: 0
+                            to: 1
+                            duration: 280
+                            easing.type: Easing.OutCubic
+                        }
+                        NumberAnimation {
+                            target: inputRowInner
+                            property: "y"
+                            from: 12
+                            to: 0
+                            duration: 280
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                }
 
             RowLayout {
                 anchors.fill: parent
@@ -179,8 +340,12 @@ Item {
                     primary: true
                     enabled: !root.controller.busy
                     text: qsTr("Log in")
+                    textSuffix: "→"
+                    Layout.preferredHeight: Style.standardPrimaryButtonHeight
+                    Layout.preferredWidth: implicitWidth + 8
                     onClicked: root.controller.submitServerUrl()
                 }
+            }
             }
 
             Rectangle {

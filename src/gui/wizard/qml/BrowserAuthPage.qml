@@ -5,6 +5,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Style
 import "../../tray"
 
@@ -19,20 +20,95 @@ Item {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 24
-        spacing: 14
+        spacing: 16
 
         Item {
             Layout.fillHeight: true
         }
 
-        Image {
-            source: "image://svgimage-custom-color/globe.svg/" + root.primaryButtonColor
-            sourceSize.width: 72
-            sourceSize.height: 72
-            fillMode: Image.PreserveAspectFit
+        Rectangle {
+            id: badge
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 72
-            Layout.preferredHeight: 72
+            Layout.preferredWidth: 96
+            Layout.preferredHeight: 96
+            radius: 24
+            clip: true
+
+            readonly property color gradientTop: Style.darkMode
+                ? Qt.lighter(Style.ncBlue, 1.15)
+                : Qt.lighter(Style.ncBlue, 1.35)
+            readonly property color gradientBottom: Qt.darker(Style.ncBlue, 1.1)
+
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: badge.gradientTop }
+                GradientStop { position: 1.0; color: badge.gradientBottom }
+            }
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.22)
+                shadowBlur: 0.6
+                shadowVerticalOffset: 5
+            }
+
+            scale: 0.5
+            opacity: 0
+            Component.onCompleted: badgeEntrance.start()
+            ParallelAnimation {
+                id: badgeEntrance
+                NumberAnimation {
+                    target: badge
+                    property: "scale"
+                    from: 0.5
+                    to: 1.0
+                    duration: 340
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 5
+                }
+                NumberAnimation {
+                    target: badge
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 220
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Rectangle {
+                id: logoTile
+                anchors.centerIn: parent
+                width: 60
+                height: 60
+                radius: 15
+                color: Style.wizardWindowBackground
+                clip: true
+
+                Image {
+                    anchors.fill: parent
+                    anchors.margins: 4
+                    source: "qrc:/client/theme/colored/company-logo.jpg"
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        maskEnabled: true
+                        maskSource: logoMask
+                    }
+                }
+
+                Rectangle {
+                    id: logoMask
+                    anchors.fill: parent
+                    radius: 11
+                    visible: false
+                    layer.enabled: true
+                }
+            }
         }
 
         EnforcedPlainTextLabel {

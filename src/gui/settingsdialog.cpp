@@ -27,6 +27,7 @@
 #include <QToolButton>
 #include <QLayout>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QPixmap>
 #include <QImage>
 #include <QWidgetAction>
@@ -48,6 +49,7 @@
 #include <QtGlobal>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QFrame>
 
 #ifdef Q_OS_MACOS
 #include "nativetitlebar_mac.h"
@@ -103,12 +105,37 @@ public:
 
 };
 
-constexpr auto TOOLBAR_CSS = QLatin1String(
-    "QToolBar { background: transparent; margin: 0; padding: 0; border: none; spacing: 0; } "
-    "QToolBar QToolButton { background: transparent; border: none; margin: 0; padding: 8px 12px; font-size: 14px; border-radius: 8px; } "
-    "QToolBar QToolBarExtension { padding: 0; } "
-    "QToolBar QToolButton:checked { background: palette(highlight); color: palette(highlighted-text); }"
-);
+QString toolbarCss()
+{
+    const auto brand = OCC::Theme::instance()->wizardHeaderBackgroundColor();
+    const auto brandHover = brand.lighter(112);
+    return QStringLiteral(
+        "QToolBar { background: transparent; margin: 0; padding: 0; border: none; spacing: 4px; } "
+        "QToolBar QToolButton { background: transparent; border: none; margin: 0; padding: 10px 12px; font-size: 14px; border-radius: 10px; } "
+        "QToolBar QToolButton:hover { background: rgba(127, 127, 127, 0.16); } "
+        "QToolBar QToolBarExtension { padding: 0; } "
+        "QToolBar QToolButton:checked { background: %1; color: white; } "
+        "QToolBar QToolButton:checked:hover { background: %2; }"
+    ).arg(brand.name(), brandHover.name());
+}
+
+/** Rounded-square pixmap, cropped-to-fill from source. */
+QPixmap roundedPixmap(const QPixmap &source, int size, int radius)
+{
+    QPixmap scaled = source.scaled(size, size, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    const QRect cropRect((scaled.width() - size) / 2, (scaled.height() - size) / 2, size, size);
+    scaled = scaled.copy(cropRect);
+
+    QPixmap result(size, size);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    QPainterPath path;
+    path.addRoundedRect(0, 0, size, size, radius, radius);
+    painter.setClipPath(path);
+    painter.drawPixmap(0, 0, scaled);
+    return result;
+}
 
 const float buttonSizeRatio = 1.618f; // golden ratio
 constexpr auto settingsDialogDefaultWidth = 950;
@@ -156,8 +183,7 @@ SettingsDialog::SettingsDialog(ownCloudGui *gui, QWidget *parent)
 
     setObjectName("Settings"); // required as group for saveGeometry call
 
-    //: This name refers to the application name e.g Nextcloud
-    setWindowTitle(tr("%1 Settings").arg(Theme::instance()->appNameGUI()));
+    setWindowTitle(tr("%1 Settings").arg(QStringLiteral("CMC")));
 
     connect(AccountManager::instance(), &AccountManager::accountAdded,
         this, &SettingsDialog::accountAdded);
@@ -487,7 +513,7 @@ void SettingsDialog::customizeStyle()
     }
 
     const QScopedValueRollback<bool> updatingStyle(_updatingStyle, true);
-    _toolBar->setStyleSheet(TOOLBAR_CSS);
+    _toolBar->setStyleSheet(toolbarCss());
 
     auto separatorColor = palette().color(QPalette::Mid);
     separatorColor.setAlpha(48);
@@ -658,6 +684,31 @@ void SettingsDialog::setupUi()
     auto *navigationLayout = new QVBoxLayout(navigationContainer);
     navigationLayout->setContentsMargins(0, 0, 0, 0);
     navigationLayout->setSpacing(0);
+
+    auto *brandHeader = new QWidget(navigationContainer);
+    brandHeader->setObjectName("settings_brand_header"_L1);
+    auto *brandLayout = new QHBoxLayout(brandHeader);
+    brandLayout->setContentsMargins(8, 4, 8, 16);
+    brandLayout->setSpacing(10);
+
+    auto *brandLogo = new QLabel(brandHeader);
+    const QPixmap logoSource(QStringLiteral(":/client/theme/colored/company-logo.jpg"));
+    if (!logoSource.isNull()) {
+        brandLogo->setPixmap(roundedPixmap(logoSource, 32, 9));
+    }
+    brandLogo->setFixedSize(32, 32);
+
+    auto *brandName = new QLabel(QStringLiteral("CMC"), brandHeader);
+    auto brandFont = brandName->font();
+    brandFont.setPointSize(brandFont.pointSize() + 3);
+    brandFont.setBold(true);
+    brandName->setFont(brandFont);
+
+    brandLayout->addWidget(brandLogo);
+    brandLayout->addWidget(brandName);
+    brandLayout->addStretch(1);
+
+    navigationLayout->addWidget(brandHeader);
     navigationLayout->addWidget(_toolBar);
     navigationLayout->addStretch(1);
 

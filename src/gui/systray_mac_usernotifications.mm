@@ -152,7 +152,7 @@ void registerNotificationCategories(const QString &localisedDownloadString) {
         title:QObject::tr("Reply").toNSString()
         options:UNNotificationActionOptionNone
         textInputButtonTitle:QObject::tr("Reply").toNSString()
-        textInputPlaceholder:QObject::tr("Send a Nextcloud Talk reply").toNSString()];
+        textInputPlaceholder:QObject::tr("Send a CMC Talk reply").toNSString()];
 
     UNNotificationCategory * const talkReplyCategory = [UNNotificationCategory
         categoryWithIdentifier:@"TALK_MESSAGE"

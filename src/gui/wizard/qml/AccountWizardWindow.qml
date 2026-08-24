@@ -24,7 +24,7 @@ WizardStyledWindow {
     height: compactHeight
     minimumWidth: Style.accountWizardWindowWidth
     minimumHeight: compactHeight
-    title: ""
+    title: qsTr("CMC")
     function defaultHeightForCurrentStep() {
         return controller && controller.currentStep === AccountWizardController.SyncOptionsStep
             ? syncOptionsHeight

@@ -21,16 +21,33 @@ Control {
 
     signal clicked()
 
-    implicitHeight: descriptionLabel.text === "" ? 42 : 56
-    padding: 10
+    hoverEnabled: true
+    implicitHeight: descriptionLabel.text === "" ? 46 : 60
+    padding: 12
+
+    scale: mouseArea.pressed && root.enabled ? 0.99 : 1.0
+    Behavior on scale {
+        NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
+    }
 
     background: Rectangle {
-        radius: 6
-        border.width: 1
-        border.color: !root.enabled ? Style.wizardRowDisabledBorder : root.selected ? Style.wizardSelectedBorder : Style.wizardRowBorder
+        radius: 10
+        border.width: root.selected ? 2 : 1
+        border.color: !root.enabled
+            ? Style.wizardRowDisabledBorder
+            : root.selected
+                ? Style.ncBlue
+                : (root.hovered ? Style.ncBlue : Style.wizardRowBorder)
         color: !root.enabled ? Style.wizardRowDisabledBackground : root.selected
             ? Style.wizardSelectedBackground
-            : Style.wizardRowBackground
+            : (root.hovered ? Qt.lighter(Style.wizardRowBackground, 1.04) : Style.wizardRowBackground)
+
+        Behavior on border.color {
+            ColorAnimation { duration: 120 }
+        }
+        Behavior on color {
+            ColorAnimation { duration: 120 }
+        }
     }
 
     contentItem: RowLayout {
@@ -45,13 +62,25 @@ Control {
             border.color: root.enabled ? Style.wizardRadioAccent : Style.wizardRadioDisabled
             color: "transparent"
 
+            Behavior on border.color {
+                ColorAnimation { duration: 120 }
+            }
+
             Rectangle {
                 anchors.centerIn: parent
                 width: 8
                 height: 8
                 radius: width / 2
                 color: Style.wizardRadioAccent
-                visible: root.selected && root.enabled
+                scale: root.selected && root.enabled ? 1.0 : 0.0
+                opacity: root.selected && root.enabled ? 1.0 : 0.0
+
+                Behavior on scale {
+                    NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 4 }
+                }
+                Behavior on opacity {
+                    NumberAnimation { duration: 120 }
+                }
             }
         }
 
@@ -82,6 +111,7 @@ Control {
     }
 
     MouseArea {
+        id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         enabled: root.enabled

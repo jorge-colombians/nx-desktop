@@ -565,7 +565,7 @@ QString Theme::forceConfigAuthType() const
 
 QString Theme::defaultClientFolder() const
 {
-    return appName();
+    return QStringLiteral("CMC");
 }
 
 QString Theme::systrayIconFlavor(bool mono) const

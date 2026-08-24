@@ -6,6 +6,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Style
 import com.nextcloud.desktopclient
 import "../../tray"
@@ -20,6 +21,18 @@ Item {
     readonly property color primaryTextColor: Style.wizardPrimaryText
     readonly property color hintTextColor: Style.wizardSecondaryText
 
+    opacity: 0
+    Component.onCompleted: pageEntrance.start()
+    NumberAnimation {
+        id: pageEntrance
+        target: root
+        property: "opacity"
+        from: 0
+        to: 1
+        duration: 260
+        easing.type: Easing.OutCubic
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.leftMargin: 28
@@ -29,34 +42,98 @@ Item {
         spacing: Style.extraSmallSpacing
 
         Item {
-            Layout.preferredWidth: 80
-            Layout.preferredHeight: 80
+            id: avatarRing
+            Layout.preferredWidth: 88
+            Layout.preferredHeight: 88
             Layout.alignment: Qt.AlignHCenter
+
+            scale: 0.6
+            opacity: 0
+            Component.onCompleted: avatarEntrance.start()
+            ParallelAnimation {
+                id: avatarEntrance
+                NumberAnimation {
+                    target: avatarRing
+                    property: "scale"
+                    from: 0.6
+                    to: 1.0
+                    duration: 340
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 5
+                }
+                NumberAnimation {
+                    target: avatarRing
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 260
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Rectangle {
                 anchors.fill: parent
                 radius: width / 2
-                color: Style.wizardAvatarPlaceholder
-                visible: accountAvatar.status !== Image.Ready
 
-                EnforcedPlainTextLabel {
-                    anchors.centerIn: parent
-                    text: root.controller.userDisplayName !== "" ? root.controller.userDisplayName.charAt(0).toUpperCase() : ""
-                    color: root.primaryTextColor
-                    font.pixelSize: Style.pixelSize + 22
-                    font.bold: true
+                gradient: Gradient {
+                    orientation: Gradient.Vertical
+                    GradientStop { position: 0.0; color: Qt.lighter(Style.ncBlue, 1.3) }
+                    GradientStop { position: 1.0; color: Qt.darker(Style.ncBlue, 1.1) }
+                }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(Style.ncBlue.r, Style.ncBlue.g, Style.ncBlue.b, 0.35)
+                    shadowBlur: 0.6
+                    shadowVerticalOffset: 3
                 }
             }
 
-            Image {
-                id: accountAvatar
+            Item {
                 anchors.fill: parent
-                source: root.controller.avatarUrl
-                sourceSize.width: 80
-                sourceSize.height: 80
-                fillMode: Image.PreserveAspectCrop
-                cache: false
-                visible: status === Image.Ready
+                anchors.margins: 4
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    color: Style.wizardAvatarPlaceholder
+                    visible: accountAvatar.status !== Image.Ready
+                    clip: true
+
+                    EnforcedPlainTextLabel {
+                        anchors.centerIn: parent
+                        text: root.controller.userDisplayName !== "" ? root.controller.userDisplayName.charAt(0).toUpperCase() : ""
+                        color: root.primaryTextColor
+                        font.pixelSize: Style.pixelSize + 20
+                        font.bold: true
+                    }
+                }
+
+                Image {
+                    id: accountAvatar
+                    anchors.fill: parent
+                    source: root.controller.avatarUrl
+                    sourceSize.width: 80
+                    sourceSize.height: 80
+                    fillMode: Image.PreserveAspectCrop
+                    cache: false
+                    visible: status === Image.Ready
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        maskEnabled: true
+                        maskSource: avatarMask
+                    }
+                }
+
+                Rectangle {
+                    id: avatarMask
+                    anchors.fill: parent
+                    radius: width / 2
+                    visible: false
+                    layer.enabled: true
+                }
             }
         }
 
@@ -67,16 +144,28 @@ Item {
             font.bold: true
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
+            Layout.topMargin: 12
             wrapMode: Text.WordWrap
         }
 
-        EnforcedPlainTextLabel {
-            text: root.serverLabel
-            color: root.hintTextColor
-            font.pixelSize: Style.pixelSize + 2
-            horizontalAlignment: Text.AlignHCenter
-            Layout.fillWidth: true
-            elide: Text.ElideMiddle
+        Rectangle {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 4
+            Layout.preferredWidth: serverLabelText.implicitWidth + 20
+            Layout.preferredHeight: serverLabelText.implicitHeight + 8
+            radius: height / 2
+            color: Style.wizardRowBackground
+            border.width: 1
+            border.color: Style.wizardRowBorder
+
+            EnforcedPlainTextLabel {
+                id: serverLabelText
+                anchors.centerIn: parent
+                text: root.serverLabel
+                color: root.hintTextColor
+                font.pixelSize: Style.pixelSize + 1
+                elide: Text.ElideMiddle
+            }
         }
 
         ColumnLayout {
@@ -133,10 +222,14 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Style.wizardFooterButtonHeight
-                    radius: 6
+                    radius: 10
                     border.width: 1
                     border.color: root.controller.localSyncFolderError === "" ? Style.wizardRowBorder : Style.wizardErrorBorder
                     color: Style.wizardRowBackground
+
+                    Behavior on border.color {
+                        ColorAnimation { duration: 120 }
+                    }
 
                     EnforcedPlainTextLabel {
                         anchors.fill: parent

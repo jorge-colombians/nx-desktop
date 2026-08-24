@@ -128,12 +128,14 @@ BasicControls.Button {
             GradientStop { position: 1.0; color: root.primaryGradientBottom }
         }
 
-        layer.enabled: root.primary
+        layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(Style.ncBlue.r, Style.ncBlue.g, Style.ncBlue.b, root.enabled ? (root.hovered ? 0.45 : 0.32) : 0)
-            shadowBlur: 0.6
-            shadowVerticalOffset: root.hovered && root.enabled ? 4 : 2
+            shadowColor: root.primary
+                ? Qt.rgba(Style.ncBlue.r, Style.ncBlue.g, Style.ncBlue.b, root.enabled ? (root.hovered ? 0.45 : 0.32) : 0)
+                : Qt.rgba(0, 0, 0, root.enabled ? (root.hovered ? 0.18 : 0.08) : 0)
+            shadowBlur: root.primary ? 0.6 : 0.4
+            shadowVerticalOffset: root.hovered && root.enabled ? (root.primary ? 4 : 2) : (root.primary ? 2 : 1)
 
             Behavior on shadowVerticalOffset {
                 NumberAnimation { duration: 120; easing.type: Easing.OutCubic }

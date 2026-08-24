@@ -137,6 +137,7 @@ Item {
             visible: root.controller.busy || root.controller.authPolling
             spacing: 8
             Layout.fillWidth: true
+            Layout.topMargin: 4
 
             Item {
                 Layout.fillWidth: true
@@ -145,8 +146,9 @@ Item {
             NCBusyIndicator {
                 running: activityIndicatorRow.visible
                 visible: running
-                Layout.preferredWidth: 20
-                Layout.preferredHeight: 20
+                color: Style.ncBlue
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
             }
 
             Item {

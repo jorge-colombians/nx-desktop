@@ -1,5 +1,3 @@
-cmake --build "/home/jorge/Documents/Projects/Personal/next-cloud/clients/desktop-client/nx-desktop/build/QT_6_10_3-Debug" --target nextcloud -j$(nproc) && "/home/jorge/Documents/Projects/Personal/next-cloud/clients/desktop-client/nx-desktop/build/QT_6_10_3-Debug/bin/nextcloud"
-
 <!--
   - SPDX-FileCopyrightText: 2017 Nextcloud GmbH and Nextcloud contributors
   - SPDX-FileCopyrightText: 2011 Nextcloud GmbH and Nextcloud contributors
@@ -80,6 +78,57 @@ Then you might continue with these steps:
 3. ⬆ Create a [pull request](https://opensource.guide/how-to-contribute/#opening-a-pull-request) and `@mention` the people from the issue to eview
 4. 👍 Fix things that come up during a review
 5. 🎉 Wait for it to get merged!
+
+### Building installers
+
+Official installers all go through [KDE Craft](https://community.kde.org/Craft) (config in `craftmaster.ini`), except Linux which uses a dedicated AppImage script. Windows and macOS installers **must** be built on their target OS (Craft targets MSVC / Xcode toolchains — no cross-compile from Linux). Linux AppImage builds fine on Ubuntu.
+
+#### Linux (AppImage) — buildable on Ubuntu
+
+Uses the same Docker container CI uses, so deps match exactly:
+
+```bash
+docker run --rm -v "$(pwd):/nextcloud-client" \
+  ghcr.io/nextcloud/continuous-integration-client-appimage-qt6:client-appimage-el8-6.10.2-4 \
+  /bin/bash -c "BUILDNR=local DESKTOP_CLIENT_ROOT=/nextcloud-client EXECUTABLE_NAME=nextcloud QT_BASE_DIR=/root/linux-gcc-x86_64 /nextcloud-client/admin/linux/build-appimage.sh"
+```
+
+Output `.AppImage` lands in the container's working dir — mount/copy it out, or add `-w /nextcloud-client/build-appimage-out` and adjust the script's output path if you want it dropped straight into the repo.
+
+Set `BUILD_UPDATER=ON` to include the built-in updater.
+
+#### Windows (NSIS/MSI installer) — needs a Windows machine
+
+```powershell
+git clone -q --depth=1 https://invent.kde.org/packaging/craftmaster.git CraftMaster
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-kde.git|stable-34.0|"
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-nextcloud.git|stable-34.0|"
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c craft
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --install-deps nextcloud-client
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --src-dir . nextcloud-client
+python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --package nextcloud-client
+```
+
+Requires Python 3.12, Visual Studio 2022 (MSVC toolchain), and Inkscape on PATH. Packaged setup exe/MSI shows up under `windows-msvc2022_64-cl\build\nextcloud-client\work\build` (NSIS via CPack, `CPACK_NSIS_COMPRESSOR` set in `CPackOptions.cmake.in`).
+
+No native or reliable cross-compile path from Ubuntu — Craft's Windows target needs the real MSVC toolchain.
+
+#### macOS (.dmg) — needs a Mac
+
+```bash
+git clone --depth=1 https://invent.kde.org/packaging/craftmaster.git CraftMaster
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-kde.git|stable-34.0|"
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-nextcloud.git|stable-34.0|"
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c craft
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c --install-deps nextcloud-client
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c --options nextcloud-client.srcDir=$(pwd) nextcloud-client
+python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-clang -c --package nextcloud-client
+```
+
+Use target `macos-clang-arm64` for Apple Silicon. Requires Xcode + command line tools and `brew install homebrew/cask/inkscape`. Output DMG uses CPack's DragNDrop generator (`CPACK_DMG_*` in `NextcloudCPack.cmake`). See also [`doc/macOS-development.md`](./doc/macOS-development.md).
+
+> [!NOTE]
+> Craftmaster repo URLs/branches (`stable-34.0`) and the AppImage container tag come straight from `.github/workflows/windows-build-and-test.yml`, `macos-build-and-test.yml` and `linux-appimage.yml` — check those if a build fails, CI config is the source of truth.
 
 ### Test servers
 

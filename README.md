@@ -3,52 +3,33 @@
   - SPDX-FileCopyrightText: 2011 Nextcloud GmbH and Nextcloud contributors
   - SPDX-License-Identifier: GPL-2.0-or-later
 -->
-# Nextcloud Desktop Client
+# CMC Desktop Client
 
-[![REUSE status](https://api.reuse.software/badge/github.com/nextcloud/desktop)](https://api.reuse.software/info/github.com/nextcloud/desktop)
-
-The Nextcloud Desktop Client is an app to synchronize files from Nextcloud Server with your computer available for Windows, macOS and Linux.
+CMC (Cloudmail City) is a desktop sync client for Windows, macOS and Linux, built on a fork of the [Nextcloud Desktop Client](https://github.com/nextcloud/desktop). It syncs files between the CMC server and your computer.
 
 <p align="center">
     <img src="doc/images/main_dialog_christine.png" alt="Desktop Client on Windows" width="450">
 </p>
 
-## Downloads 🚀
-For the latest stable and recommended version, please refer to [the official download page](https://nextcloud.com/install/#install-clients).
+## About this fork
 
-## Help 🛟
-You can find [the user, administration and developer manuals for the desktop client](https://docs.nextcloud.com/#desktop) on our central documentation site.
+This is a private fork of the Nextcloud Desktop Client, rebranded and locked to our own server (`https://nc.cloudmail.city/`). It is not affiliated with Nextcloud GmbH, is not submitted upstream, and does not follow Nextcloud's contribution process. See `CLAUDE.md` for active branding/UI conventions and `AGENTS.md` for engineering context on the codebase.
 
-## Contributing 🫴
-- Make sure to follow our [guidelines for contributing](https://github.com/nextcloud/desktop/blob/98690b1e9141f2c602c9b4583c1f9ed16b95a309/CONTRIBUTING.md) to this repository.
-- Don't forget to read our [Code of Conduct](https://nextcloud.com/community/code-of-conduct/). This document offers some guidance to ensure Nextcloud participants can cooperate effectively in a positive and inspiring atmosphere and to explain how together we can strengthen and support each other.
-
-## Join the team 👪
-There are many ways to contribute, of which development is only one! Find out [how to get involved](https://nextcloud.com/contribute/), including as a translator, designer, tester, helping others, and much more! 😍
-
-## Help testing 🔬
-Download and install the client:
-
-- [All releases](https://github.com/nextcloud-releases/desktop/releases)<br>
-- [Daily builds](https://download.nextcloud.com/desktop/daily)
-
-## Reporting issues 🐛
-If you find any bugs or have any suggestion for improvement, please
-[open an issue in this repository](https://github.com/nextcloud/desktop/issues).
+It remains licensed GPL-2.0-or-later, same as upstream — see [License](#license-) below.
 
 ## Bug fixing and development 🛠️
 
 > [!TIP]
 > For contributors on macOS, see the [macOS development guide](./doc/macOS-development.md).
 
-> [!NOTE]  
+> [!NOTE]
 > Find the system requirements and instructions on [how to work with KDE Craft in our desktop client blueprints repository](https://github.com/nextcloud/craft-blueprints-nextcloud/).
 
 ### System requirements
 - Windows 10, Windows 11, macOS 13 Ventura (or newer) or Linux
 - [🔽 Inkscape (to generate icons)](https://inkscape.org/release/)
-- Developer tools: cmake, clang/gcc/g++:
-- Qt6 since 3.14, Qt5 for earlier versions
+- Developer tools: cmake, clang/gcc/g++
+- Qt6 (Qt 6.10.3 configured in this repo)
 - OpenSSL
 - [🔽 QtKeychain](https://github.com/frankosterfeld/qtkeychain)
 - SQLite
@@ -61,23 +42,22 @@ Optional recommendations:
 
 ### Build
 
-Step by step instructions on how to build the client to contribute.
-
-1. Clone the Github repository: `git clone https://github.com/nextcloud/desktop.git`
+1. Clone this repository: `git clone git@github-colombians:jorge-colombians/nx-desktop.git`
 2. Create build directory: `mkdir <build directory>`
 3. Navigate into build directory: `cd <build directory>`
-4. Compile: `cmake -S <cloned desktop repo> -B build -DCMAKE_PREFIX_PATH=<dependencies> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=. -DNEXTCLOUD_DEV=ON`
+4. Compile: `cmake -S <cloned repo> -B build -DCMAKE_PREFIX_PATH=<dependencies> -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=. -DNEXTCLOUD_DEV=ON`
 
 > [!TIP]
 > The cmake variable NEXTCLOUD_DEV allows you to run your own build of the client while developing in parallel with an installed version of the client.
 
-Then you might continue with these steps:
-	
-1. 🐛 [Pick a good first issue](https://github.com/nextcloud/desktop/labels/good%20first%20issue)
-2. 👩‍🔧 Create a branch and make your changes. Remember to sign off your commits using `git commit -sm "Your commit message"`
-3. ⬆ Create a [pull request](https://opensource.guide/how-to-contribute/#opening-a-pull-request) and `@mention` the people from the issue to eview
-4. 👍 Fix things that come up during a review
-5. 🎉 Wait for it to get merged!
+> [!TIP]
+> The production server URL is locked via `NEXTCLOUD.cmake`. For local testing against a different server, reconfigure with `-DAPPLICATION_SERVER_URL="http://localhost:8080"` (requires re-running `cmake -S/-B`, not just a rebuild).
+
+For day-to-day local iteration (Debug config already set up for Qt 6.10.3):
+
+```bash
+cmake --build "<repo>/build/QT_6_10_3-Debug" --target nextcloud -j$(nproc) && "<repo>/build/QT_6_10_3-Debug/bin/nextcloud"
+```
 
 ### Building installers
 
@@ -85,7 +65,7 @@ Official installers all go through [KDE Craft](https://community.kde.org/Craft) 
 
 #### Linux (AppImage) — buildable on Ubuntu
 
-Uses the same Docker container CI uses, so deps match exactly:
+Uses the same Docker container upstream CI uses, so deps match exactly:
 
 ```bash
 docker run --rm -v "$(pwd):/nextcloud-client" \
@@ -128,12 +108,12 @@ python3 CraftMaster/CraftMaster.py --config craftmaster.ini --target macos-64-cl
 Use target `macos-clang-arm64` for Apple Silicon. Requires Xcode + command line tools and `brew install homebrew/cask/inkscape`. Output DMG uses CPack's DragNDrop generator (`CPACK_DMG_*` in `NextcloudCPack.cmake`). See also [`doc/macOS-development.md`](./doc/macOS-development.md).
 
 > [!NOTE]
-> Craftmaster repo URLs/branches (`stable-34.0`) and the AppImage container tag come straight from `.github/workflows/windows-build-and-test.yml`, `macos-build-and-test.yml` and `linux-appimage.yml` — check those if a build fails, CI config is the source of truth.
+> Craftmaster repo URLs/branches (`stable-34.0`) and the AppImage container tag come straight from upstream's `.github/workflows/windows-build-and-test.yml`, `macos-build-and-test.yml` and `linux-appimage.yml` — check those if a build fails, CI config there is the source of truth for the underlying toolchain.
 
 ### Test servers
 
-The easiest way to have a local Nextcloud server to develop, debug and test the client against is [the Nextcloud Docker image](https://github.com/nextcloud/docker).
-The following example shows how to deploy a Nextcloud Docker container on the local host which will be removed again as soon as the command is interrupted.
+The easiest way to have a local server to develop, debug and test the client against is [the Nextcloud Docker image](https://github.com/nextcloud/docker) (CMC's server is itself Nextcloud-based).
+The following example shows how to deploy a container on the local host which will be removed again as soon as the command is interrupted.
 Note that this requires Docker to be installed in your developer environment.
 
 ```bash
@@ -146,18 +126,11 @@ docker run \
     nextcloud
 ```
 
-This simple test server already suffices in the most cases. For more advanced server test deployments we also recommend [Nextcloud development environment on Docker Compose](https://juliusknorr.github.io/nextcloud-docker-dev/).
-
-## Get in touch 💬
-* [📋 Forum](https://help.nextcloud.com)
-* [🐘 Mastodon](https://mastodon.xyz/@nextcloud)
-* [🔗 LinkedIn](https://www.linkedin.com/company/nextcloud-gmbh/)
-* [🦋 Bluesky](https://bsky.app/profile/nextcloud.bsky.social)
-* [👥 Facebook](https://www.facebook.com/nextclouders)
-
-You can also [get professional support for Nextcloud and the desktop client](https://nextcloud.com/support)!
+Remember to build with `-DAPPLICATION_SERVER_URL="http://localhost:8080"` to point the client at this local server instead of the enforced production URL.
 
 ## License 📜
+
+This project is a derivative work of the Nextcloud Desktop Client and remains licensed under the GPL:
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

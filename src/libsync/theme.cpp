@@ -451,6 +451,7 @@ Theme::Theme()
 
 #ifdef APPLICATION_SERVER_URL_ENFORCE
     _forceOverrideServerUrl = true;
+    _startLoginFlowAutomatically = true;
 #endif
 #ifdef APPLICATION_SERVER_URL
     setOverrideServerUrl(QString::fromUtf8(APPLICATION_SERVER_URL));

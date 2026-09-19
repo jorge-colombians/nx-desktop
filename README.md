@@ -128,6 +128,19 @@ docker run \
 
 Remember to build with `-DAPPLICATION_SERVER_URL="http://localhost:8080"` to point the client at this local server instead of the enforced production URL.
 
+#### Ready to use: run current changes against your local Docker server
+
+With the Docker container above running on `localhost:8080` and the `QT_6_10_3-Debug` build already configured, this reconfigures the server URL, rebuilds, and launches in one go:
+
+```bash
+cmake -S . -B build/QT_6_10_3-Debug -DAPPLICATION_SERVER_URL="http://localhost:8080" \
+  && cmake --build build/QT_6_10_3-Debug --target nextcloud -j$(nproc) \
+  && rm -f ~/.config/Nextcloud/nextcloud.cfg \
+  && ./build/QT_6_10_3-Debug/bin/cmc
+```
+
+The `rm` clears any existing account config so the first-run wizard reappears pointed at the new URL — drop it if you just want to relaunch with an already-configured account. Switch back to production by re-running the `cmake -S -B` reconfigure step with `-DAPPLICATION_SERVER_URL="https://nc.cloudmail.city/"` (or just omit the flag — that's the default in `NEXTCLOUD.cmake`).
+
 ## License 📜
 
 This project is a derivative work of the Nextcloud Desktop Client and remains licensed under the GPL:

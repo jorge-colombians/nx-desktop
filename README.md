@@ -65,15 +65,24 @@ Official installers all go through [KDE Craft](https://community.kde.org/Craft) 
 
 #### Linux (AppImage) — buildable on Ubuntu
 
+Easiest: `./dev-ubuntu.sh appimage` (menu option "Build installer"). It runs the
+command below with a numeric build number and a parallel-job limit that fits
+Docker's memory, and puts the result in `dist/`. `./dev-ubuntu.sh appimage-install`
+then adds it to your own app menu.
+
+When started, the AppImage adds itself to the user's app menu (a `.desktop` file
+and icon in `~/.local/share`, see `installAppImageDesktopEntry()` in
+`src/common/utility_unix.cpp`), so users only need to run it once.
+
 Uses the same Docker container upstream CI uses, so deps match exactly:
 
 ```bash
 docker run --rm -v "$(pwd):/nextcloud-client" \
   ghcr.io/nextcloud/continuous-integration-client-appimage-qt6:client-appimage-el8-6.10.2-4 \
-  /bin/bash -c "BUILDNR=local DESKTOP_CLIENT_ROOT=/nextcloud-client EXECUTABLE_NAME=nextcloud QT_BASE_DIR=/root/linux-gcc-x86_64 /nextcloud-client/admin/linux/build-appimage.sh"
+  /bin/bash -c "BUILDNR=0 DESKTOP_CLIENT_ROOT=/nextcloud-client EXECUTABLE_NAME=cmc QT_BASE_DIR=/root/linux-gcc-x86_64 /nextcloud-client/admin/linux/build-appimage.sh"
 ```
 
-Output `.AppImage` lands in the container's working dir — mount/copy it out, or add `-w /nextcloud-client/build-appimage-out` and adjust the script's output path if you want it dropped straight into the repo.
+The `.AppImage` lands in the repo root (owned by root, since the container runs as root).
 
 Set `BUILD_UPDATER=ON` to include the built-in updater.
 

@@ -13,6 +13,7 @@
 #include <QStandardPaths>
 #include <QtGlobal>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QString>
 #include <QTextStream>
 
@@ -120,7 +121,8 @@ void Utility::setLaunchOnStartup(const QString &appName, const QString &guiName,
            << QLatin1String("GenericName=") << QLatin1String("File Synchronizer\n")
            << QLatin1String("Exec=\"") << executablePath << "\" --background\n"
            << QLatin1String("Terminal=") << "false\n"
-           << QLatin1String("Icon=") << APPLICATION_ICON_NAME << QLatin1Char('\n')
+           // inside an AppImage the icon is installed under the app id, see installAppImageDesktopEntry()
+           << QLatin1String("Icon=") << (runningInsideAppImage ? QStringLiteral(LINUX_APPLICATION_ID) : QStringLiteral(APPLICATION_ICON_NAME)) << QLatin1Char('\n')
            << QLatin1String("Categories=") << QLatin1String("Network\n")
            << QLatin1String("Type=") << QLatin1String("Application\n")
            << QLatin1String("StartupNotify=") << "false\n"
@@ -148,6 +150,100 @@ QString Utility::getCurrentUserName()
     return {};
 }
 
+namespace {
+
+// Quotes a path for use as the program in a .desktop Exec key (see the
+// Desktop Entry Specification, "The Exec key").
+QString quotedDesktopExecPath(const QString &path)
+{
+    QString escaped;
+    for (const auto ch : path) {
+        if (ch == u'"' || ch == u'`' || ch == u'$' || ch == u'\\') {
+            escaped += u'\\';
+        }
+        escaped += ch;
+    }
+    // Exec is itself a string value, so backslashes get escaped once more.
+    escaped.replace(QStringLiteral("\\"), QStringLiteral("\\\\"));
+    return u'"' + escaped + u'"';
+}
+
+bool writeFileIfChanged(const QString &path, const QByteArray &content)
+{
+    QFile file(path);
+    if (file.open(QIODevice::ReadOnly) && file.readAll() == content) {
+        return true;
+    }
+    file.close();
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qCWarning(lcUtility) << "Could not write" << path << file.errorString();
+        return false;
+    }
+    return file.write(content) == content.size();
+}
+
+// An AppImage is a single file that does not install anything, so it never
+// shows up in the desktop's app menu. Copy the .desktop file and icon bundled
+// inside it to the user's data dir, pointing Exec at the AppImage itself.
+// This runs on every start, so moving or updating the AppImage keeps the entry
+// working; TryExec hides the entry again if the AppImage gets deleted.
+// The file name must be LINUX_APPLICATION_ID: that is the app id the window
+// reports (QGuiApplication::desktopFileName) and the name the URI handler
+// registration below refers to.
+void installAppImageDesktopEntry(const QString &appImagePath)
+{
+    const auto appDir = qEnvironmentVariable("APPDIR");
+    if (appDir.isEmpty()) {
+        qCWarning(lcUtility) << "APPDIR not set, not adding the AppImage to the app menu";
+        return;
+    }
+
+    const auto appId = QStringLiteral(LINUX_APPLICATION_ID);
+    const auto dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+
+    QFile bundledIcon(appDir + QStringLiteral("/usr/share/icons/hicolor/512x512/apps/" APPLICATION_ICON_NAME ".png"));
+    const auto iconDir = dataHome + QStringLiteral("/icons/hicolor/512x512/apps");
+    if (bundledIcon.open(QIODevice::ReadOnly) && QDir().mkpath(iconDir)) {
+        writeFileIfChanged(iconDir + u'/' + appId + QStringLiteral(".png"), bundledIcon.readAll());
+    } else {
+        qCWarning(lcUtility) << "Could not install AppImage icon from" << bundledIcon.fileName();
+    }
+
+    QFile bundledDesktopFile(appDir + QStringLiteral("/usr/share/applications/") + appId + QStringLiteral(".desktop"));
+    if (!bundledDesktopFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCWarning(lcUtility) << "Could not read" << bundledDesktopFile.fileName();
+        return;
+    }
+
+    const auto execPrefix = QStringLiteral("Exec=" APPLICATION_EXECUTABLE);
+    const QRegularExpression iconKey(QStringLiteral("^(Icon(\\[[^\\]]*\\])?)="));
+    QString content;
+    QTextStream in(&bundledDesktopFile);
+    while (!in.atEnd()) {
+        const auto line = in.readLine();
+        if (line.startsWith(execPrefix) && (line.size() == execPrefix.size() || line.at(execPrefix.size()) == u' ')) {
+            content += QStringLiteral("Exec=") + quotedDesktopExecPath(appImagePath) + line.mid(execPrefix.size());
+        } else if (const auto match = iconKey.match(line); match.hasMatch()) {
+            content += match.captured(1) + u'=' + appId;
+        } else {
+            content += line;
+        }
+        content += u'\n';
+        if (line == QStringLiteral("[Desktop Entry]")) {
+            content += QStringLiteral("TryExec=") + appImagePath + u'\n';
+        }
+    }
+
+    const auto applicationsDir = dataHome + QStringLiteral("/applications");
+    if (!QDir().mkpath(applicationsDir)) {
+        qCWarning(lcUtility) << "Could not create" << applicationsDir;
+        return;
+    }
+    writeFileIfChanged(applicationsDir + u'/' + appId + QStringLiteral(".desktop"), content.toUtf8());
+}
+
+} // namespace
+
 void Utility::registerUriHandlerForLocalEditing()
 {
     const auto appImagePath = qEnvironmentVariable("APPIMAGE");
@@ -157,6 +253,8 @@ void Utility::registerUriHandlerForLocalEditing()
         // only register x-scheme-handler if running inside appImage
         return;
     }
+
+    installAppImageDesktopEntry(appImagePath);
 
     // mirall.desktop.in must have an x-scheme-handler mime type specified
     const QString desktopFileName = QLatin1String(LINUX_APPLICATION_ID) + QLatin1String(".desktop");

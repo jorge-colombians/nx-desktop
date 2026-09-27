@@ -23,12 +23,14 @@ Building a consistent, modern look across the account wizard. Match these conven
 
 ## Testing changes
 
-Rebuild + run (Debug config already configured for Qt 6.10.3):
+Use `./dev-ubuntu.sh` (interactive menu, or e.g. `./dev-ubuntu.sh build-run --local --reset`). It installs requirements, configures, builds and runs the dev build. Manual equivalent (Debug config for Qt 6.10.3):
 
 ```bash
-cmake --build "<repo>/build/QT_6_10_3-Debug" --target nextcloud -j$(nproc) && "<repo>/build/QT_6_10_3-Debug/bin/nextcloud"
+cmake --build "<repo>/build/QT_6_10_3-Debug" --target nextcloud -j$(nproc) && "<repo>/build/QT_6_10_3-Debug/bin/cmcdev"
 ```
 
-QML load failures are logged as warnings, not crashes — the app silently falls back to tray-only with no console error. Always check `~/.config/Nextcloud/logs/<latest>.log.0` for `Failed to load QML` after any wizard QML change, don't just eyeball that the process is still running.
+The CMake target is still `nextcloud`, but since the CMC rebrand the dev binary is `cmcdev` and its config lives in `~/.config/CMCDev/`.
 
-Delete `~/.config/Nextcloud/nextcloud.cfg` between test runs to re-trigger the first-run wizard instead of going straight to tray.
+QML load failures are logged as warnings, not crashes — the app silently falls back to tray-only with no console error. Always check `~/.config/CMCDev/logs/<latest>.log.0` for `Failed to load QML` after any wizard QML change, don't just eyeball that the process is still running.
+
+Delete `~/.config/CMCDev/cmcdev.cfg` (or pass `--reset` to the script) between test runs to re-trigger the first-run wizard instead of going straight to tray.

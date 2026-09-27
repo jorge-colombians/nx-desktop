@@ -1,0 +1,8 @@
+KIT DE LOGOS CMC / Cloudmail City / cm.city
+
+Incluye formatos: SVG, PNG, PNG transparente, PDF, ICO y PSD.
+Nota sobre CorelDRAW: no fue posible crear un .CDR nativo en este entorno.
+CorelDRAW puede abrir y editar directamente los SVG y PDF incluidos.
+
+Variantes incluidas por cada logo: fullcolor, white, monochrome_blue.
+Logos incluidos: CMC_logo_principal y CMC_simbolo.

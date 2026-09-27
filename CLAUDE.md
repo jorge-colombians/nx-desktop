@@ -34,3 +34,11 @@ The CMake target is still `nextcloud`, but since the CMC rebrand the dev binary 
 QML load failures are logged as warnings, not crashes — the app silently falls back to tray-only with no console error. Always check `~/.config/CMCDev/logs/<latest>.log.0` for `Failed to load QML` after any wizard QML change, don't just eyeball that the process is still running.
 
 Delete `~/.config/CMCDev/cmcdev.cfg` (or pass `--reset` to the script) between test runs to re-trigger the first-run wizard instead of going straight to tray.
+
+### Windows
+
+Use `.\dev-windows.ps1` (interactive menu, or e.g. `.\dev-windows.ps1 build-run -Local -Reset`). Unlike Ubuntu, Windows deps (Qt, KArchive, QtKeychain, ...) must be built with the real MSVC toolset, so the whole flow goes through [KDE Craft](https://community.kde.org/Craft) instead of a manual cmake configure — `install` sets up winget packages (Git, Python, Inkscape, VS2022 Build Tools) plus Craft itself, `build`/`run`/`build-run` produce the dev build (`cmcdev.exe`), `test` runs ctest, and `installer` produces the real NSIS/MSI (`cmc.exe`) into `dist\`.
+
+The script auto-patches the known CMC-rebrand gaps in the upstream `craft-blueprints-nextcloud` repo (missing `import os`, the `cmc`/`cmccmd` exe blacklist pattern, and branding fields) — see `README.md`'s "Windows (NSIS/MSI installer)" section for the underlying issue if a patch ever needs updating for a newer blueprint branch.
+
+Config/logs live under `%APPDATA%\CMCDev\` (dev build) — same `Failed to load QML` caveat as Ubuntu applies here too.

@@ -2,6 +2,13 @@
 # SPDX-FileCopyrightText: 2011 ownCloud GmbH
 # SPDX-License-Identifier: GPL-2.0-or-later
 .gitmodules
+
+# Craft build toolchain/dependency cache (local build env, not source)
+windows-msvc2022_64-cl/
+craftmaster.local.ini
+CraftMaster/
+craft-clone/
+
 *build*/
 *flymake*
 CMakeLists.txt.user*

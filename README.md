@@ -99,19 +99,39 @@ Set `BUILD_UPDATER=ON` to include the built-in updater.
 
 #### Windows (NSIS/MSI installer) — needs a Windows machine
 
-```powershell
-git clone -q --depth=1 https://invent.kde.org/packaging/craftmaster.git CraftMaster
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-kde.git|stable-34.0|"
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-nextcloud.git|stable-34.0|"
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c craft
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --install-deps nextcloud-client
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --src-dir . nextcloud-client
-python CraftMaster\CraftMaster.py --config craftmaster.ini --target windows-msvc2022_64-cl -c --package nextcloud-client
+Create an untracked `craftmaster.local.ini` next to `craftmaster.ini` (one-time step) pointing Craft's root at a short path — Craft's own build/cache paths get deep enough to blow past Windows' 260-char `MAX_PATH` if the repo itself is nested (e.g. under `Documents\Projects\...`), which fails downloads with `Failed to open ... (2)` even on HTTP 200, or cascades into unrelated pip/SSL errors when Craft falls back to building from source:
+
+```ini
+[Variables]
+Root = C:\craft-nc
 ```
 
-Requires Python 3.12, Visual Studio 2022 (MSVC toolchain), and Inkscape on PATH. Packaged setup exe/MSI shows up under `windows-msvc2022_64-cl\build\nextcloud-client\work\build` (NSIS via CPack, `CPACK_NSIS_COMPRESSOR` set in `CPackOptions.cmake.in`).
+```powershell
+git clone -q --depth=1 https://invent.kde.org/packaging/craftmaster.git CraftMaster
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-kde.git|stable-34.0|"
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c --add-blueprint-repository "https://github.com/nextcloud/craft-blueprints-nextcloud.git|stable-34.0|"
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c craft
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c --install-deps nextcloud-client
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c --options "nextcloud-client.srcDir=$PWD" nextcloud-client
+python CraftMaster\CraftMaster.py --config craftmaster.ini --config-override craftmaster.local.ini --target windows-msvc2022_64-cl -c --package nextcloud-client
+```
+
+`--options nextcloud-client.srcDir=...` (run from the repo root, so `$PWD` resolves correctly) replaces the older `--src-dir .`, which is deprecated, rejects relative paths, and — because it sets the source dir globally rather than scoped to one blueprint — crashes unrelated packages like `libs/python/python.py`.
+
+Requires Python 3.12, Visual Studio 2022 (MSVC toolchain), and Inkscape on PATH. Packaged setup exe/MSI shows up under `C:\craft-nc\windows-msvc2022_64-cl\build\nextcloud-client\work\build` (NSIS via CPack, `CPACK_NSIS_COMPRESSOR` set in `CPackOptions.cmake.in`).
 
 No native or reliable cross-compile path from Ubuntu — Craft's Windows target needs the real MSVC toolchain.
+
+> [!NOTE]
+> If the `nextcloud-client` install step fails with `file INSTALL cannot find ".../theme/cmc.VisualElementsManifest.xml": File exists.`, it's a leftover from the Nextcloud→CMC rebrand: `src/gui/CMakeLists.txt` installs `theme/${APPLICATION_EXECUTABLE}.VisualElementsManifest.xml` (`APPLICATION_EXECUTABLE` = `cmc`, set in `NEXTCLOUD.cmake`), but the file itself was never renamed from `theme/nextcloud.VisualElementsManifest.xml`. Already fixed on this branch — mentioned here in case an older checkout still hits it.
+>
+> `--package nextcloud-client` needs three local patches to `<craft-root>\etc\blueprints\locations\craft-blueprints-nextcloud\nextcloud-client\`, because that repo (an upstream dependency, not part of this codebase — pulled in via `--add-blueprint-repository`) was never updated for the Nextcloud→CMC rebrand and can't be fixed here:
+>
+> 1. `NameError: name 'os' is not defined` in `createPackage` (`nextcloud-client.py`, `self.blacklist_file.append(os.path.join(...))`) — missing `import os`. Add `import os` at the top of `nextcloud-client.py`, above `import info`.
+> 2. The final installer silently ships with **no main executable at all** (only DLLs/`uninstall.exe` — nothing to run after installing). Cause: `blacklist.txt`'s last line, `bin/(?!(nextcloud|nextcloudcmd|QtWebEngineProcess)).*\.exe`, blacklists every `.exe` in `bin/` except an explicit name whitelist — and this build produces `cmc.exe`/`cmccmd.exe`, not `nextcloud.exe`/`nextcloudcmd.exe`, so both get stripped. Change the pattern to `bin/(?!(cmc|cmccmd|QtWebEngineProcess)).*\.exe`.
+> 3. No Start Menu shortcut gets created, and the installer/install-dir/company name all still say "Nextcloud". In `nextcloud-client.py`'s `setTargets()` and `createPackage()`, update `self.description`, `self.displayName`, `self.defines["appname"]`, `self.defines["company"]`, and `self.applicationExecutable` to CMC branding, and add `self.defines["executable"] = "bin\\cmc.exe"` so `NullsoftInstallerPackager` generates the shortcut.
+>
+> The installer/exe icon still defaults to Craft's generic mascot icon (`data/icons/craft.ico`) since no CMC `.ico` exists yet — not fixed, since it needs a real icon asset generated first.
 
 #### macOS (.dmg) — needs a Mac
 
